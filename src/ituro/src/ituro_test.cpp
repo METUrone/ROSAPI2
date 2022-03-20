@@ -1,6 +1,9 @@
 #include "ros/ros.h"
 #include "control_a/hiz.h"
+#include "control_a/konum.h"
+#include "control_a/takeoff_land.h"
 #include "nav_msgs/Odometry.h"
+#include "mavros_msgs/State.h"
 #include "ituro/cv_cizgi.h"
 #include "math.h"
 #include "vector"
@@ -29,11 +32,19 @@ struct velocity{
 
 #define RADIUS 0.01//m
 
+ros::ServiceClient pos_client;
 ros::ServiceClient hiz_client;
 
 nav_msgs::Odometry odom;
+mavros_msgs::State state;
 
 ituro::cv_cizgi cizgi;
+
+
+void state_listener(const mavros_msgs::State::ConstPtr& msg){
+    state = *msg;
+}
+
 
 void pos_listener(const nav_msgs::Odometry::ConstPtr& msg){
     odom = *msg;
@@ -105,6 +116,14 @@ void follow_line(){
     ros::Duration(0.5).sleep();
 }
 
+void gotoPos(double x, double y, double z){
+    control_a::konum pos;
+    pos.request.pose.pose.position.x = x;
+    pos.request.pose.pose.position.y = y;
+    pos.request.pose.pose.position.z = z;
+    pos_client.call(pos);
+}
+
 int main(int argc, char **argv)
 {   // Ros için gerekli olan şeyler
     ros::init(argc, argv, "handler");
@@ -114,12 +133,50 @@ int main(int argc, char **argv)
     
     ros::Subscriber pos_sub = n.subscribe("/mavros/global_position/local", 50,pos_listener);
 
+    ros::Subscriber state_sub = n.subscribe("/mavros/state", 100,state_listener);
+
     ros::Subscriber cizgi_sub = n.subscribe("/ituro/cizgi", 50,cizgi_listener);
 
-    hiz_client = n.serviceClient<control_a::hiz>("/control/hiz");
+    ros::ServiceClient tkoff_land = n.serviceClient<control_a::takeoff_land>("/control/takeoff_land");
+
+    pos_client = n.serviceClient<control_a::konum>("/control/konum");
+
+    ros::Rate looprate(20);
+
+    // Mavros bağlanana kadar bekle
+    while((!state.connected) && ros::ok()){
+        ros::spinOnce();
+        looprate.sleep();
+    }
+
+    ROS_INFO("Connected!");
 
     geographic_msgs::GeoPointStamped gp_origin;
     gp_origin_pub.publish(gp_origin);
 
-    follow_line();
+    control_a::takeoff_land tkoff_msg;
+    tkoff_msg.request.isTakeoff = true;
+    tkoff_msg.request.pose.pose.position.z = 1;
+    tkoff_land.call(tkoff_msg);
+    
+    ros::Duration(10.0).sleep();
+
+    gotoPos(1,0,1);
+
+    ros::Duration(10.0).sleep();
+
+    gotoPos(1,1,1);
+    
+    ros::Duration(10.0).sleep();
+
+    gotoPos(0,1,1);
+
+    ros::Duration(10.0).sleep();
+
+    gotoPos(0,0,1);
+
+    ros::Duration(10.0).sleep();
+
+    tkoff_msg.request.isTakeoff = false;
+    tkoff_land.call(tkoff_msg);
 }
