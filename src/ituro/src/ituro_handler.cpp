@@ -26,6 +26,8 @@ struct velocity{
     double z;
 };
 
+int adana = 0;
+
 #define RADIUS 0.01//m
 
 ros::ServiceClient hiz_client;
