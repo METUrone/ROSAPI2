@@ -81,7 +81,7 @@ void follow_line(){
         tf2::Matrix3x3 matrix(quat);
         matrix.getEulerYPR(yaw,p,r);
 
-        err_t = cizgi.theta - yaw;
+        err_t = cizgi.theta;
         err_y = cizgi.y;
         err_z = 2 - odom.pose.pose.position.z;
 
@@ -154,26 +154,34 @@ int main(int argc, char **argv)
     geographic_msgs::GeoPointStamped gp_origin;
     gp_origin_pub.publish(gp_origin);
 
+    while ((state.mode.compare("GUIDED")) && ros::ok())
+    {
+        ros::spinOnce();
+        looprate.sleep();
+    }
+    
+    ros::Duration(1.0).sleep();
+
     control_a::takeoff_land tkoff_msg;
     tkoff_msg.request.isTakeoff = true;
-    tkoff_msg.request.pose.pose.position.z = 1;
+    tkoff_msg.request.pose.pose.position.z = 1.5;
     tkoff_land.call(tkoff_msg);
     
     ros::Duration(10.0).sleep();
 
-    gotoPos(1,0,1);
+    gotoPos(1,0,1.5);
 
     ros::Duration(10.0).sleep();
 
-    gotoPos(1,1,1);
+    gotoPos(1,1,1.5);
     
     ros::Duration(10.0).sleep();
 
-    gotoPos(0,1,1);
+    gotoPos(0,1,1.5);
 
     ros::Duration(10.0).sleep();
 
-    gotoPos(0,0,1);
+    gotoPos(0,0,1.5);
 
     ros::Duration(10.0).sleep();
 

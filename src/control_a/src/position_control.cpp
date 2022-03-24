@@ -8,18 +8,27 @@
 #include "control_a/takeoff_land.h"
 #include "control_a/odom_srv.h"
 #include "mavros_msgs/ParamSet.h"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/utils.h>
 
 ros::ServiceClient arming_client;
 ros::ServiceClient set_mode_client;
 ros::ServiceClient param_set_client;
 
+tf2::Quaternion quat; 
 nav_msgs::Odometry odom;
 geometry_msgs::PoseStamped pose_command;
 mavros_msgs::State state;
 bool onAir;
+double yaw,p,r;
 
 void pos_listener(const nav_msgs::Odometry::ConstPtr& msg){
     odom = *msg;
+    tf2::fromMsg(odom.pose.pose.orientation, quat);
+    tf2::Matrix3x3 matrix(quat);
+    matrix.getEulerYPR(yaw,p,r);
+    ROS_INFO("%.2f",yaw*180/M_PI);
 }
 
 void state_listener(const mavros_msgs::State::ConstPtr& msg){

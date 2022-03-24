@@ -45,8 +45,7 @@ class lane_follower:
     def publish(self, publish=True, error=None, distance=None, angle=None, line_side=None, encl=None):  # TODO adjust the publisher vs
         if publish:
             msg = cv_cizgi()
-            msg.x = self.c_x
-            msg.y = self.c_y
+            msg.y = self.distance
             msg.theta = angle
             self.pub.publish()
             print("error : " + str(error) + " || " + "angle : " + str(angle) + " || " + "line side : " + str(line_side) + " || " + "distance : " + str(distance) + " || " + "area : " + str(encl))
